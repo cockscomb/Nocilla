@@ -155,6 +155,71 @@ describe(@"#startLoading", ^{
             });
         });
     });
+
+    context(@"when the protocol response have a cookie", ^{
+        
+        __block NSString *stringUrl;
+        __block LSHTTPStubURLProtocol *protocol = nil;
+        __block LSTestingNSURLProtocolClient *client = nil;
+        
+        beforeEach(^{
+            
+            stringUrl = @"http://www.example.com/path";
+            NSURLRequest *request = [[NSURLRequest alloc] initWithURL:[NSURL URLWithString:stringUrl]];
+            
+            client = [[LSTestingNSURLProtocolClient alloc] init];
+            
+            protocol = [[LSHTTPStubURLProtocol alloc] initWithRequest:request cachedResponse:nil client:client];
+        });
+        
+        context(@"that matches the stubbed pair", ^{
+            
+            __block NSString *cookieName;
+            __block NSString *cookieValue;
+            
+            __block NSHTTPCookieAcceptPolicy previousPolicy;
+            
+            beforeEach(^{
+                
+                NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+                previousPolicy = [cookieStorage cookieAcceptPolicy];
+                [cookieStorage setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain];
+                
+                cookieName = @"SESSIONID";
+                cookieValue = [[NSProcessInfo processInfo] globallyUniqueString];
+                
+                LSStubRequest *stubRequest = [[LSStubRequest alloc] initWithMethod:@"GET" url:stringUrl];
+                LSStubResponse *stubResponse = [[LSStubResponse alloc] initWithStatusCode:200];
+                [stubResponse setHeader:@"Content-Type" value:@"text/html"];
+                
+                NSString *cookie = [NSString stringWithFormat:@"%@=%@;", cookieName, cookieValue];
+                [stubResponse setHeader:@"Set-Cookie" value:cookie];
+                stubRequest.response = stubResponse;
+                
+                [[LSNocilla sharedInstance] stub:@selector(stubbedRequests) andReturn:@[stubRequest]];
+            });
+            
+            afterEach(^{
+                [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:previousPolicy];
+            });
+            
+            it(@"should be found the cookie", ^{
+                [protocol startLoading];
+                
+                NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+                
+                NSArray *cookies = [cookieStorage cookiesForURL:[NSURL URLWithString:stringUrl]];
+                BOOL cookieFound = NO;
+                for (NSHTTPCookie *cookie in cookies) {
+                    if ([cookie.name isEqualToString:cookieName]) {
+                        cookieFound = YES;
+                        [[cookie.value should] equal:cookieValue];
+                    }
+                }
+                [[theValue(cookieFound) should] equal:theValue(YES)];
+            });
+        });
+    });
 });
 
 SPEC_END

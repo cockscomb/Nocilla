@@ -12,6 +12,7 @@
 @property (nonatomic, strong, readwrite) NSData *body;
 
 @property (nonatomic, strong) LSStubResponse *response;
+@property (nonatomic, strong) NSError *error;
 
 - (id)initWithMethod:(NSString *)method url:(NSString *)url;
 - (void)setHeader:(NSString *)header value:(NSString *)value;

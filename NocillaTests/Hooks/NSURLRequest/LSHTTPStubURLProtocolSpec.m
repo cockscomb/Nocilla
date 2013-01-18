@@ -155,6 +155,30 @@ describe(@"#startLoading", ^{
             });
         });
     });
+    context(@"that matches an error request", ^{
+        __block NSString *stringUrl = nil;
+        __block NSError *error = nil;
+        __block LSHTTPStubURLProtocol *protocol = nil;
+        __block LSTestingNSURLProtocolClient *client = nil;
+        beforeEach(^{
+            stringUrl = @"http://api.example.com/dogs.xml";
+            NSURLRequest *request = [[NSURLRequest alloc] initWithURL:[NSURL URLWithString:stringUrl]];
+            client = [[LSTestingNSURLProtocolClient alloc] init];
+            protocol = [[LSHTTPStubURLProtocol alloc] initWithRequest:request cachedResponse:nil client:client];
+            
+            LSStubRequest *stubRequest = [[LSStubRequest alloc] initWithMethod:@"GET" url:stringUrl];
+            error = [NSError errorWithDomain:NSURLErrorDomain code:400 userInfo:nil];
+            stubRequest.error = error;
+            
+            [[LSNocilla sharedInstance] stub:@selector(stubbedRequests) andReturn:@[stubRequest]];
+        });
+        
+        it(@"should pass to the client the correct response", ^{
+            [[client should] receive:@selector(URLProtocol:didFailWithError:) withArguments:protocol, error];
+            
+            [protocol startLoading];
+        });
+    });
 });
 
 SPEC_END

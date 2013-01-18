@@ -40,6 +40,13 @@
     NSHTTPURLResponse* urlResponse = nil;
     NSData *body = nil;
     if (stubbedRequest) {
+        
+        // Connection Error
+        if (stubbedRequest.error) {
+            [client URLProtocol:self didFailWithError:stubbedRequest.error];
+            return;
+        }
+        
         urlResponse = [[NSHTTPURLResponse alloc] initWithURL:request.URL
                                                                  statusCode:stubbedResponse.statusCode
                                                                headerFields:stubbedResponse.headers

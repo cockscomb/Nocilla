@@ -47,6 +47,14 @@
         return responseDSL;
     };
 }
+
+- (AndReturnErrorMethod)andReturnError {
+    return ^(NSInteger statusCode) {
+        NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:statusCode userInfo:nil];
+        self.request.error = error;
+        return error;
+    };
+}
 @end
 
 LSStubRequestDSL * stubRequest(NSString *method, NSString *url) {
